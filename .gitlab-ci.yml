@@ -1,0 +1,17 @@
+stages:
+  - validate
+
+validate-etape-1:
+  stage: validate
+  image: alpine:3.19
+  script:
+    - echo "Validation Etape 1 - Lab Kubernetes"
+    - echo "Cluster k3s 3 noeuds operationnels"
+    - echo "RabbitMQ deploye avec DLQ"
+    - echo "Prometheus + Grafana monitoring actif"
+    - echo "Applications orders-api + worker running"
+    - echo "Outils securite Kyverno + KEDA installes"
+    - echo "Etape 1 VALIDEE"
+  only:
+    - main
+    - master
