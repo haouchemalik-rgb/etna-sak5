@@ -1,0 +1,16 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires des éditeurs
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Fichiers temporaires
+*.tmp
+*.log
+
+# Ne rien ignorer d'autre - tous les documents sont versionnés
