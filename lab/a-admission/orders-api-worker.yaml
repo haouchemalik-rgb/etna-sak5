@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: app
+data:
+  RABBITMQ_URL: "amqp://admin:admin@rabbitmq.messaging.svc.cluster.local:5672/"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-api
+  template:
+    metadata:
+      labels:
+        app: orders-api
+    spec:
+      containers:
+      - name: api
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install pika flask;
+            python -c '
+            from flask import Flask, request
+            import pika, os, json
+            app = Flask(__name__)
+            @app.route("/order", methods=["POST"])
+            def create_order():
+                conn = pika.BlockingConnection(pika.URLParameters(os.getenv("RABBITMQ_URL")))
+                ch = conn.channel()
+                ch.queue_declare(queue="orders.q", durable=True)
+                ch.basic_publish(exchange="", routing_key="orders.q", body=json.dumps(request.json))
+                conn.close()
+                return {"status": "sent"}, 201
+            @app.route("/health")
+            def health():
+                return {"status": "ok"}
+            app.run(host="0.0.0.0", port=8080)
+            '
+        env:
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: RABBITMQ_URL
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: app
+spec:
+  selector:
+    app: orders-api
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+      - name: worker
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install pika;
+            python -c '
+            import pika, os, time, json
+            def callback(ch, method, props, body):
+                print(f"Received: {body}")
+                time.sleep(1)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            conn = pika.BlockingConnection(pika.URLParameters(os.getenv("RABBITMQ_URL")))
+            ch = conn.channel()
+            ch.queue_declare(queue="orders.q", durable=True)
+            ch.basic_consume(queue="orders.q", on_message_callback=callback)
+            print("Worker started, waiting for messages...")
+            ch.start_consuming()
+            '
+        env:
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: RABBITMQ_URL
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
