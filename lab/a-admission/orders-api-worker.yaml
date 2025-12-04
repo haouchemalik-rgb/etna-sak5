@@ -21,13 +21,19 @@ spec:
       labels:
         app: orders-api
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: api
         image: python:3.11-slim
         command: ["/bin/sh", "-c"]
         args:
           - |
-            pip install pika flask;
+            pip install --user --no-cache-dir pika flask;
             python -c '
             from flask import Flask, request
             import pika, os, json
@@ -51,8 +57,23 @@ spec:
             configMapKeyRef:
               name: app-config
               key: RABBITMQ_URL
+        - name: PYTHONUSERBASE
+          value: "/tmp/.local"
         ports:
         - containerPort: 8080
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             cpu: "100m"
@@ -60,6 +81,9 @@ spec:
           limits:
             cpu: "500m"
             memory: "256Mi"
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -88,13 +112,19 @@ spec:
       labels:
         app: worker
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: worker
         image: python:3.11-slim
         command: ["/bin/sh", "-c"]
         args:
           - |
-            pip install pika;
+            pip install --user --no-cache-dir pika;
             python -c '
             import pika, os, time, json
             def callback(ch, method, props, body):
@@ -114,6 +144,21 @@ spec:
             configMapKeyRef:
               name: app-config
               key: RABBITMQ_URL
+        - name: PYTHONUSERBASE
+          value: "/tmp/.local"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             cpu: "100m"
@@ -121,3 +166,6 @@ spec:
           limits:
             cpu: "500m"
             memory: "256Mi"
+      volumes:
+      - name: tmp
+        emptyDir: {}

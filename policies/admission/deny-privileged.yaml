@@ -1,0 +1,29 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-privileged
+  annotations:
+    policies.kyverno.io/title: Deny Privileged Containers
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Les conteneurs privilégiés ont accès à toutes les ressources de l'hôte
+      et peuvent compromettre l'ensemble du cluster. Cette politique bloque
+      tout pod avec securityContext.privileged = true.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: deny-privileged-containers
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Les conteneurs privilégiés sont interdits. Utilisez des capabilities spécifiques si nécessaire."
+      pattern:
+        spec:
+          containers:
+          - =(securityContext):
+              =(privileged): "false"

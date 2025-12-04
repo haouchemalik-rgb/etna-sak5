@@ -1,0 +1,55 @@
+# Ce fichier contient des pods VOLONTAIREMENT NON-CONFORMES
+# pour tester que les politiques Kyverno les bloquent correctement
+
+---
+# Test 1: Pod privilégié (doit être BLOQUÉ par deny-privileged)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-privileged
+  namespace: app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.21.0
+    securityContext:
+      privileged: true  # ❌ INTERDIT
+---
+# Test 2: Pod avec hostPath (doit être BLOQUÉ par deny-hostpath)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-hostpath
+  namespace: app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.21.0
+  volumes:
+  - name: host-volume
+    hostPath:  # ❌ INTERDIT
+      path: /etc
+---
+# Test 3: Pod sans readOnlyRootFilesystem (doit être BLOQUÉ par require-readonly-rootfs)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-writable-rootfs
+  namespace: app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.21.0
+    securityContext:
+      readOnlyRootFilesystem: false  # ❌ INTERDIT
+---
+# Test 4: Pod avec tag :latest (doit être BLOQUÉ par deny-latest-tag)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-latest-tag
+  namespace: app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest  # ❌ INTERDIT

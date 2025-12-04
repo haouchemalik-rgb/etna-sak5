@@ -1,0 +1,27 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-latest-tag
+  annotations:
+    policies.kyverno.io/title: Deny Latest Image Tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Le tag 'latest' est mutable et peut pointer vers différentes versions,
+      créant des incohérences et des problèmes de reproductibilité.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: deny-latest-tag
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Le tag ':latest' est interdit. Utilisez un tag de version spécifique (ex: nginx:1.21.0)."
+      pattern:
+        spec:
+          containers:
+          - image: "!*:latest"

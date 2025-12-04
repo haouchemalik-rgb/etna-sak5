@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-readonly-rootfs
+  annotations:
+    policies.kyverno.io/title: Require Read-Only Root Filesystem
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Un filesystem root en lecture seule empêche les modifications
+      malveillantes du conteneur et réduit la surface d'attaque.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: require-readonly-rootfs
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Le filesystem root doit être en lecture seule (readOnlyRootFilesystem: true)."
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true

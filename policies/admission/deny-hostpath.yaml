@@ -1,0 +1,27 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-hostpath
+  annotations:
+    policies.kyverno.io/title: Deny HostPath Volumes
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Les volumes hostPath permettent un accès direct au filesystem de l'hôte,
+      créant un risque de fuite de données et d'escalade de privilèges.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: deny-hostpath-volumes
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    validate:
+      message: "Les volumes hostPath sont interdits. Utilisez des PersistentVolumes à la place."
+      pattern:
+        spec:
+          =(volumes):
+          - X(hostPath): "null"
