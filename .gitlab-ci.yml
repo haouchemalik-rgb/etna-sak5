@@ -1,17 +1,88 @@
+# Pipeline CI/CD - ISR-SAK5 Kubernetes Security - Étape 2
+# Intégration Trivy pour scan de sécurité
+
 stages:
   - validate
+  - security-scan
 
-validate-etape-1:
+# Validation basique des manifests YAML
+validate-manifests:
   stage: validate
   image: alpine:3.19
   script:
-    - echo "Validation Etape 1 - Lab Kubernetes"
-    - echo "Cluster k3s 3 noeuds operationnels"
-    - echo "RabbitMQ deploye avec DLQ"
-    - echo "Prometheus + Grafana monitoring actif"
-    - echo "Applications orders-api + worker running"
-    - echo "Outils securite Kyverno + KEDA installes"
-    - echo "Etape 1 VALIDEE"
+    - echo "Validation de la structure du projet"
+    - test -d lab/a-admission || exit 1
+    - test -d lab/d-messaging || exit 1
+    - test -d policies/admission || exit 1
+    - test -f lab/d-messaging/rabbitmq.yaml || exit 1
+    - test -f lab/a-admission/orders-api-worker.yaml || exit 1
+    - echo "✅ Structure du projet validée"
   only:
     - main
     - master
+  tags:
+    - docker
+
+# Vérification des scripts (syntaxe bash)
+validate-scripts:
+  stage: validate
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - echo "Vérification de la syntaxe des scripts"
+    - bash -n scripts/*.sh
+    - echo "✅ Scripts validés"
+  only:
+    - main
+    - master
+  tags:
+    - docker
+
+# Scan Trivy des manifests Kubernetes
+trivy-scan-manifests:
+  stage: security-scan
+  image: aquasec/trivy:latest
+  script:
+    - echo "Scan de sécurité des manifests Kubernetes avec Trivy"
+    - trivy config lab/ --severity HIGH,CRITICAL --exit-code 0
+    - echo "✅ Scan des manifests terminé"
+  only:
+    - main
+    - master
+  tags:
+    - docker
+
+# Scan Trivy des images Docker utilisées
+trivy-scan-images:
+  stage: security-scan
+  image: aquasec/trivy:latest
+  script:
+    - echo "Scan de sécurité des images Docker"
+    - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
+    - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
+    - echo "✅ Scan des images terminé"
+    - echo "⚠️  Note: --exit-code 0 pour ne pas bloquer (mode audit)"
+    - echo "En production, utiliser --exit-code 1 pour bloquer les déploiements"
+  only:
+    - main
+    - master
+  tags:
+    - docker
+
+# Validation des politiques Kyverno
+validate-kyverno-policies:
+  stage: validate
+  image: alpine:3.19
+  script:
+    - echo "Vérification des politiques Kyverno"
+    - test -f policies/admission/deny-privileged.yaml || exit 1
+    - test -f policies/admission/deny-hostpath.yaml || exit 1
+    - test -f policies/admission/require-readonly-rootfs.yaml || exit 1
+    - test -f policies/admission/deny-latest-tag.yaml || exit 1
+    - echo "✅ 4 politiques Kyverno présentes"
+  only:
+    - main
+    - master
+  tags:
+    - docker
