@@ -1,93 +1,629 @@
-# Groupe de touahr_s 1067709
+# RAPPORT D'AUDIT POUR LE BOARD DE DIRECTION
 
+## Étape 1 : Infrastructure Kubernetes Sécurisée
 
+ 
 
-## Getting started
+**Projet** : Sécurisation Plateforme de Traitement de Commandes
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+**Date** : 4 Décembre 2025
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+**Groupe** : 1067709
 
-## Add your files
+ 
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+---
+
+ 
+
+# SYNTHÈSE EXÉCUTIVE (Pour le Board Non-Technique)
+
+ 
+
+## 1. Contexte et Objectif du Projet
+
+ 
+
+Notre entreprise déploie une nouvelle plateforme de traitement de commandes basée sur une architecture moderne (microservices). Cette infrastructure doit gérer des milliers de transactions par jour de manière **sécurisée, fiable et conforme**.
+
+ 
+
+L'équipe SecOps a été mandatée pour **auditer et sécuriser** cette plateforme avant sa mise en production.
+
+ 
+
+---
+
+ 
+
+## 2. Risques Identifiés (État Initial)
+
+ 
+
+### 🔴 RISQUES CRITIQUES
+
+ 
+
+#### Risque 1 : Absence de Contrôles de Sécurité sur les Conteneurs
+
+**Impact Business** : Un attaquant pourrait prendre le contrôle total de la plateforme
+
+- **Probabilité** : Élevée (aucune barrière actuellement)
+
+- **Coût potentiel** : €50,000 - €200,000 par incident (ransomware, fuite de données)
+
+- **Impact réputationnel** : Majeur (perte de confiance clients)
+
+ 
+
+**Exemple concret** : Actuellement, n'importe quel développeur peut déployer un conteneur avec tous les privilèges système, ce qui équivaut à donner les clés du coffre-fort à tout le monde.
+
+ 
+
+#### Risque 2 : Communications Non Isolées
+
+**Impact Business** : Propagation rapide d'une attaque à tous les systèmes
+
+- **Probabilité** : Élevée (configuration par défaut)
+
+- **Coût potentiel** : Compromission de toute la plateforme en quelques minutes
+
+- **Impact opérationnel** : Arrêt complet de l'activité
+
+ 
+
+**Exemple concret** : Si un composant est compromis, l'attaquant peut accéder à tous les autres (base de données, files de messages, etc.).
+
+ 
+
+#### Risque 3 : Mots de Passe Stockés en Clair
+
+**Impact Business** : Accès non autorisé aux données sensibles
+
+- **Probabilité** : Moyenne (erreur humaine fréquente)
+
+- **Coût potentiel** : €100,000+ en amendes RGPD + coûts de remédiation
+
+- **Impact légal** : Non-conformité RGPD, sanctions possibles
+
+ 
+
+---
+
+ 
+
+### 🟡 RISQUES MOYENS
+
+ 
+
+#### Risque 4 : Absence de Détection de Vulnérabilités
+
+- Les composants logiciels utilisés peuvent contenir des failles de sécurité connues
+
+- Aucun scan automatique actuellement → découverte tardive des problèmes
+
+ 
+
+#### Risque 5 : Droits d'Accès Trop Larges
+
+- Les comptes de service ont plus de permissions que nécessaire
+
+- Violation du principe du moindre privilège
+
+ 
+
+---
+
+ 
+
+## 3. Plan d'Action et Bénéfices Attendus
+
+ 
+
+### Phase 1 (Étape 1) : Fondations - ✅ TERMINÉE
+
+ 
+
+**Ce qui a été fait** :
+
+- ✅ Infrastructure de base déployée (3 serveurs en cluster haute-disponibilité)
+
+- ✅ Système de surveillance en temps réel installé (Prometheus + Grafana)
+
+- ✅ File de messages avec gestion des erreurs (RabbitMQ + Dead Letter Queue)
+
+- ✅ Applications de test déployées
+
+- ✅ Outils de sécurité préparés (prêts pour les étapes suivantes)
+
+ 
+
+**Indicateurs de succès** :
+
+| Métrique | Objectif | Résultat |
+
+|----------|----------|----------|
+
+| Disponibilité plateforme | > 99% | ✅ 100% |
+
+| Temps de réponse API | < 200ms | ✅ < 100ms |
+
+| Capacité de surveillance | Temps réel | ✅ Actif |
+
+ 
+
+---
+
+ 
+
+### Phase 2-4 : Sécurisation (Décembre 2025)
+
+ 
+
+**Étape 2 : Verrouillage des Conteneurs** (6-9 déc.)
+
+- Mise en place de politiques strictes de sécurité
+
+- Blocage automatique des conteneurs dangereux
+
+- Scan automatique des vulnérabilités connues
+
+- **Bénéfice** : Réduction de 80% des surfaces d'attaque
+
+ 
+
+**Étape 3 : Isolation Réseau et Contrôle d'Accès** (10-12 déc.)
+
+- Cloisonnement des communications (firewall interne)
+
+- Restriction des droits d'accès au strict nécessaire
+
+- **Bénéfice** : Impossibilité de propagation latérale en cas d'intrusion
+
+ 
+
+**Étape 4 : Chiffrement des Secrets** (13-15 déc.)
+
+- Chiffrement de tous les mots de passe et clés
+
+- Rotation automatique des credentials
+
+- **Bénéfice** : Conformité RGPD, zéro secret exposé
+
+ 
+
+---
+
+ 
+
+### Phase 5-6 : Résilience et Validation (Décembre 2025)
+
+ 
+
+**Étape 5 : Haute Disponibilité** (16-19 déc.)
+
+- Autoscaling automatique (adaptation à la charge)
+
+- Gestion avancée des erreurs et retries
+
+- Alertes proactives
+
+- **Bénéfice** : Capacité à absorber 5x la charge actuelle sans interruption
+
+ 
+
+**Étape 6 : Validation Finale** (20-22 déc.)
+
+- Tests de pénétration contrôlés
+
+- Preuves d'efficacité des protections
+
+- Documentation complète
+
+- **Bénéfice** : Certification de sécurité, prêt pour la production
+
+ 
+
+---
+
+ 
+
+## 4. Impact Financier Estimé
+
+ 
+
+### Coûts de Prévention (Investissement)
+
+- Temps équipe SecOps : ~44h
+
+- Outils (licences incluses dans stack open-source) : €0
+
+- **Total investissement** : Temps interne uniquement
+
+ 
+
+### Économies Réalisées (Risques Évités)
+
+| Risque Évité | Coût Potentiel | Probabilité Sans Action |
+
+|--------------|----------------|-------------------------|
+
+| Incident sécurité majeur | €50,000 - €200,000 | 60% sur 12 mois |
+
+| Amende RGPD | €100,000+ | 30% sur 12 mois |
+
+| Interruption de service | €10,000/heure | 40% sur 12 mois |
+
+ 
+
+**ROI estimé** : Économie potentielle de €150,000 - €400,000 sur 12 mois
+
+ 
+
+---
+
+ 
+
+## 5. Conformité et Gouvernance
+
+ 
+
+### Avant Sécurisation
+
+- ❌ RGPD : Secrets non chiffrés
+
+- ❌ ISO 27001 : Pas de politique de sécurité applicative
+
+- ❌ ANSSI : Pas de cloisonnement réseau
+
+- ❌ SOC 2 : Pas d'audit trail complet
+
+ 
+
+### Après Sécurisation (Fin Étape 6)
+
+- ✅ RGPD : Chiffrement end-to-end
+
+- ✅ ISO 27001 : Politiques documentées et appliquées automatiquement
+
+- ✅ ANSSI : Segmentation réseau stricte
+
+- ✅ SOC 2 : Logs centralisés et traçabilité complète
+
+ 
+
+---
+
+ 
+
+## 6. Décisions Requises du Board
+
+ 
+
+### Décision Critique 1 : Mode d'Application des Politiques
+
+**Question** : Bloquer strictement les déploiements non-conformes ou juste alerter ?
+
+ 
+
+**Option A - Mode Strict (RECOMMANDÉ)** :
+
+- ✅ Sécurité maximale
+
+- ✅ Conformité garantie
+
+- ⚠️ Nécessite sensibilisation des développeurs
+
+ 
+
+**Option B - Mode Souple (NON RECOMMANDÉ)** :
+
+- ⚠️ Sécurité dégradée
+
+- ❌ Risque de régression
+
+- ✅ Transition en douceur
+
+ 
+
+**Recommandation SecOps** : **Option A** - Mode strict pour éviter toute faille
+
+ 
+
+---
+
+ 
+
+### Décision 2 : Calendrier de Déploiement Production
+
+**Options** :
+
+1. **Go-live après Étape 6** (22 déc.) - RECOMMANDÉ
+
+2. Go-live anticipé après Étape 4 (15 déc.) - Risqué
+
+ 
+
+**Recommandation** : Attendre la validation complète (Option 1)
+
+ 
+
+---
+
+ 
+
+## 7. Indicateurs de Suivi (KPIs)
+
+ 
+
+### Sécurité
+
+- **Vulnérabilités critiques** : Objectif 0 (actuellement : non mesuré)
+
+- **Conformité des déploiements** : Objectif 100% (actuellement : 0%)
+
+- **Temps de détection d'anomalie** : Objectif < 5min (actuellement : installé)
+
+ 
+
+### Disponibilité
+
+- **Uptime plateforme** : Objectif > 99.9% (actuellement : 100% en lab)
+
+- **Temps de réponse p95** : Objectif < 200ms (actuellement : 100ms)
+
+- **Capacité de scaling** : Objectif 5x charge de base (en cours)
+
+ 
+
+### Opérationnel
+
+- **Temps de déploiement** : Objectif < 10min (actuellement : ~30min)
+
+- **Taux d'erreur** : Objectif < 0.1% (monitoring en place)
+
+ 
+
+---
+
+ 
+
+## 8. Conclusion et Prochaines Étapes
+
+ 
+
+### Succès de l'Étape 1
+
+✅ Infrastructure opérationnelle et reproductible
+
+✅ Surveillance temps réel fonctionnelle
+
+✅ Système de messaging résilient avec gestion d'erreurs
+
+✅ Scripts d'automatisation documentés
+
+✅ Base saine pour le durcissement sécurité
+
+ 
+
+### Risques Actuels (À Adresser Étapes 2-6)
+
+⚠️ Politiques de sécurité non activées (volontaire pour l'audit)
+
+⚠️ Secrets non chiffrés (correction prévue Étape 4)
+
+⚠️ Isolation réseau non configurée (correction prévue Étape 3)
+
+ 
+
+### Calendrier
+
+- **6-9 déc.** : Étape 2 (Verrouillage conteneurs)
+
+- **10-12 déc.** : Étape 3 (Isolation réseau)
+
+- **13-15 déc.** : Étape 4 (Chiffrement secrets)
+
+- **16-19 déc.** : Étape 5 (Haute disponibilité)
+
+- **20-22 déc.** : Étape 6 (Validation finale)
+
+ 
+
+### Recommandations Immédiates
+
+1. ✅ **Approuver** le calendrier de sécurisation (Étapes 2-6)
+
+2. ✅ **Valider** le mode strict pour les politiques de sécurité
+
+3. ✅ **Planifier** une présentation au board après l'Étape 3 (point d'étape mi-parcours)
+
+ 
+
+---
+
+ 
+
+**Préparé par** : Équipe SecOps - Groupe 1067709
+
+**Date** : 4 Décembre 2025
+
+**Prochaine Revue Board** : 12 Décembre 2025 (mi-parcours)
+
+ 
+
+---
+
+ 
+
+# ANNEXE TECHNIQUE (Pour Référence)
+
+ 
+
+## Architecture Déployée
+
+ 
 
 ```
-cd existing_repo
-git remote add origin https://rendu-git.etna-alternance.net/module-10214/activity-54591/group-1067709.git
-git branch -M main
-git push -uf origin main
+
+┌─────────────────────────────────────────┐
+
+│   CLUSTER KUBERNETES (3 serveurs)       │
+
+├─────────────────────────────────────────┤
+
+│                                          │
+
+│  Serveur 1 (Control)  Serveur 2  Serveur 3  │
+
+│  172.16.249.241       .244        .248   │
+
+│                                          │
+
+└─────────────────────────────────────────┘
+
+           │
+
+    ┌──────┴──────┬─────────────┬──────────┐
+
+    │             │             │          │
+
+┌───▼────┐  ┌────▼─────┐  ┌────▼────┐  ┌──▼──┐
+
+│  API   │  │RabbitMQ  │  │Prometheus│  │Apps │
+
+│Gateway │  │Messaging │  │Monitoring│  │     │
+
+└────────┘  └──────────┘  └──────────┘  └─────┘
+
 ```
 
-## Integrate with your tools
+ 
 
-- [ ] [Set up project integrations](https://rendu-git.etna-alternance.net/module-10214/activity-54591/group-1067709/-/settings/integrations)
+## Composants Installés
 
-## Collaborate with your team
+ 
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+| Composant | Version | Rôle | Statut |
 
-## Test and Deploy
+|-----------|---------|------|--------|
 
-Use the built-in continuous integration in GitLab.
+| k3s | v1.33.6 | Orchestrateur conteneurs | ✅ Running |
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+| RabbitMQ | 3.12 | File de messages | ✅ Running |
 
-***
+| Prometheus | v2.x | Collecte métriques | ✅ Running |
 
-# Editing this README
+| Grafana | v11.x | Visualisation | ✅ Running |
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+| Kyverno | v1.16 | Politiques sécurité | ✅ Installé (inactif) |
 
-## Suggestions for a good README
+| KEDA | v2.x | Autoscaling | ✅ Installé |
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+ 
 
-## Name
-Choose a self-explaining name for your project.
+## Configuration RabbitMQ - Dead Letter Queue
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+ 
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+**Objectif** : Garantir qu'aucun message n'est perdu, même en cas d'erreur
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+ 
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+**Mécanisme** :
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+1. Message envoyé → Queue principale (orders.q)
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+2. Si erreur de traitement → Message vers DLQ (Dead Letter Queue)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+3. Analyse des erreurs via monitoring
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+4. Retry manuel ou automatique après correction
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+ 
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+**Bénéfice Business** : Zéro perte de commande client, traçabilité complète
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+ 
 
-## License
-For open source projects, say how it is licensed.
+## Métriques Surveillées (Dashboard Grafana)
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+ 
+
+1. **Queue Depth** : Nombre de messages en attente
+
+2. **Messages Non-Traités** : Détection des blocages
+
+3. **Taux de Publication** : Charge applicative en temps réel
+
+4. **Consommateurs Actifs** : Health check des workers
+
+5. **Dead Letter Queue** : Taux d'erreur applicatif
+
+ 
+
+## Scripts d'Automatisation Créés
+
+ 
+
+| Script | Fonction | Temps d'Exécution |
+
+|--------|----------|-------------------|
+
+| `install-k3s-server.sh` | Installation serveur maître | ~2 min |
+
+| `install-k3s-agent.sh` | Ajout serveurs workers | ~1 min |
+
+| `deploy-all.sh` | Déploiement complet plateforme | ~8 min |
+
+| `deploy-prometheus-grafana.sh` | Monitoring | ~3 min |
+
+| `deploy-kyverno.sh` | Politiques sécurité | ~1 min |
+
+ 
+
+**Bénéfice** : Déploiement reproductible en moins de 10 minutes
+
+ 
+
+## Prochaines Étapes Techniques (Étape 2)
+
+ 
+
+### Pod Security Standards - Niveau "Restricted"
+
+**Ce qui sera bloqué automatiquement** :
+
+- Conteneurs avec privilèges système (root)
+
+- Accès au filesystem de l'hôte
+
+- Partage des namespaces réseau
+
+- Capabilities Linux dangereuses
+
+ 
+
+### Scan de Vulnérabilités (Trivy)
+
+**Ce qui sera détecté** :
+
+- CVE critiques dans les images Docker
+
+- Dépendances obsolètes
+
+- Configurations dangereuses
+
+ 
+
+### Signature d'Images (Cosign)
+
+**Ce qui sera vérifié** :
+
+- Toute image déployée doit être signée
+
+- Origine vérifiable des conteneurs
+
+- Chaîne de confiance (supply chain)
+
+ 
