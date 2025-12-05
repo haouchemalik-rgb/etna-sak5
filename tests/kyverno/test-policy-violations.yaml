@@ -1,0 +1,72 @@
+# Tests de violation des politiques de sécurité
+# Ces pods DOIVENT être bloqués par PSS et/ou Kyverno
+
+---
+# Test 1 : Conteneur privilégié (doit être bloqué par PSS)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-privileged
+  namespace: app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.21.0
+    securityContext:
+      privileged: true
+
+---
+# Test 2 : Volume hostPath (doit être bloqué par PSS)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-hostpath
+  namespace: app
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:1.21.0
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
+  volumes:
+  - name: host-volume
+    hostPath:
+      path: /etc
+
+---
+# Test 3 : Tag :latest (doit être bloqué par Kyverno)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-latest-tag
+  namespace: app
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nginx
+    image: nginx:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
