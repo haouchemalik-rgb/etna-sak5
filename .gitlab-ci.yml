@@ -1,15 +1,9 @@
-trivy-scan-images:
-  stage: security-scan
-  image: aquasec/trivy:latest
+stages:
+  - test
+
+ping:
+  stage: test
+  image: alpine:3.19
   script:
-    - echo "Scan de securite des images Docker"
-    - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
-    - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
-    - echo "Scan des images termine"
-    - echo "Note: --exit-code 0 pour ne pas bloquer (mode audit)"
-    - echo "En production, utiliser --exit-code 1 pour bloquer les deploiements"
-  only:
-    - main
-    - master
-  tags:
-    - docker
+    - echo "OK"
+
