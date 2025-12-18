@@ -78,7 +78,7 @@ trivy-scan-images:
 
 kuttl-tests:
   stage: test
-  image: kubeshop/kuttl:0.15.0
+  image: kyverno/kuttl:latest
   script:
     - echo "=== kuttl tests ==="
     - kuttl test ./tests/kuttl
