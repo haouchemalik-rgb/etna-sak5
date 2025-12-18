@@ -6,12 +6,14 @@ validate-manifests:
   stage: validate
   image: alpine:3.19
   script:
-    - echo "validate manifests"
-    - test -d lab/a-admission || exit 1
-    - test -d lab/d-messaging || exit 1
-    - test -d policies/admission || exit 1
-    - test -f lab/d-messaging/rabbitmq.yaml || exit 1
-    - test -f lab/a-admission/orders-api-worker.yaml || exit 1
+    - echo "=== Step 1: validate manifests ==="
+    - echo "Checking project structure..."
+    - test -d lab/a-admission || (echo "Missing directory lab/a-admission" && exit 1)
+    - test -d lab/d-messaging || (echo "Missing directory lab/d-messaging" && exit 1)
+    - test -d policies/admission || (echo "Missing directory policies/admission" && exit 1)
+    - test -f lab/d-messaging/rabbitmq.yaml || (echo "Missing rabbitmq.yaml" && exit 1)
+    - test -f lab/a-admission/orders-api-worker.yaml || (echo "Missing orders-api-worker.yaml" && exit 1)
+    - echo "Manifests validation OK"
   only:
     - main
     - master
@@ -24,8 +26,10 @@ validate-scripts:
   before_script:
     - apk add --no-cache bash
   script:
-    - echo "validate scripts"
-    - bash -n scripts/*.sh
+    - echo "=== Step 2: validate scripts ==="
+    - echo "Checking bash syntax..."
+    - bash -n scripts/*.sh || (echo "Script syntax error" && exit 1)
+    - echo "Scripts validation OK"
   only:
     - main
     - master
@@ -36,11 +40,13 @@ validate-kyverno-policies:
   stage: validate
   image: alpine:3.19
   script:
-    - echo "validate kyverno policies"
-    - test -f policies/admission/deny-privileged.yaml || exit 1
-    - test -f policies/admission/deny-hostpath.yaml || exit 1
-    - test -f policies/admission/require-readonly-rootfs.yaml || exit 1
-    - test -f policies/admission/deny-latest-tag.yaml || exit 1
+    - echo "=== Step 3: validate kyverno policies ==="
+    - echo "Checking required policy files..."
+    - test -f policies/admission/deny-privileged.yaml || (echo "Missing deny-privileged.yaml" && exit 1)
+    - test -f policies/admission/deny-hostpath.yaml || (echo "Missing deny-hostpath.yaml" && exit 1)
+    - test -f policies/admission/require-readonly-rootfs.yaml || (echo "Missing require-readonly-rootfs.yaml" && exit 1)
+    - test -f policies/admission/deny-latest-tag.yaml || (echo "Missing deny-latest-tag.yaml" && exit 1)
+    - echo "Kyverno policies validation OK"
   only:
     - main
     - master
@@ -53,8 +59,10 @@ trivy-scan-manifests:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - echo "scan manifests"
+    - echo "=== Step 4: trivy scan manifests ==="
+    - echo "Running Trivy config scan..."
     - trivy config lab/ --severity HIGH,CRITICAL --exit-code 0
+    - echo "Trivy manifest scan OK"
   only:
     - main
     - master
@@ -67,9 +75,12 @@ trivy-scan-images:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - echo "scan images"
+    - echo "=== Step 5: trivy scan images ==="
+    - echo "Scanning python:3.11-slim..."
     - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
+    - echo "Scanning rabbitmq:3.12-management..."
     - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
+    - echo "Trivy image scan OK"
   only:
     - main
     - master
