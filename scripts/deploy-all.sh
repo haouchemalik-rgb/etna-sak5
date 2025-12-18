@@ -17,7 +17,9 @@ echo "[2/7] Déploiement Prometheus + Grafana..."
 
 echo ""
 echo "[3/7] Déploiement RabbitMQ..."
-kubectl apply -f ../lab/d-messaging/rabbitmq.yaml
+helm upgrade --install rabbitmq bitnami/rabbitmq \
+  -n messaging --create-namespace \
+  -f ../lab/d-messaging/values-rabbitmq.yaml
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n messaging --timeout=300s
 
 echo ""
