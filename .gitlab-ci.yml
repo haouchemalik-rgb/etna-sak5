@@ -6,14 +6,15 @@ validate-manifests:
   stage: validate
   image: alpine:3.19
   script:
-    - echo "=== Step 1: validate manifests ==="
-    - echo "Checking project structure..."
-    - test -d lab/a-admission || (echo "Missing directory lab/a-admission" && exit 1)
-    - test -d lab/d-messaging || (echo "Missing directory lab/d-messaging" && exit 1)
-    - test -d policies/admission || (echo "Missing directory policies/admission" && exit 1)
-    - test -f lab/d-messaging/rabbitmq.yaml || (echo "Missing rabbitmq.yaml" && exit 1)
-    - test -f lab/a-admission/orders-api-worker.yaml || (echo "Missing orders-api-worker.yaml" && exit 1)
-    - echo "Manifests validation OK"
+    - echo "=== validate manifests ==="
+    - echo "checking directories"
+    - test -d lab/a-admission || (echo "missing directory lab/a-admission" && exit 1)
+    - test -d lab/d-messaging || (echo "missing directory lab/d-messaging" && exit 1)
+    - test -d policies/admission || (echo "missing directory policies/admission" && exit 1)
+    - echo "checking files"
+    - test -f lab/d-messaging/rabbitmq.yaml || (echo "missing rabbitmq.yaml" && exit 1)
+    - test -f lab/a-admission/orders-api-worker.yaml || (echo "missing orders-api-worker.yaml" && exit 1)
+    - echo "manifests validation ok"
   only:
     - main
     - master
@@ -26,10 +27,10 @@ validate-scripts:
   before_script:
     - apk add --no-cache bash
   script:
-    - echo "=== Step 2: validate scripts ==="
-    - echo "Checking bash syntax..."
-    - bash -n scripts/*.sh || (echo "Script syntax error" && exit 1)
-    - echo "Scripts validation OK"
+    - echo "=== validate scripts ==="
+    - echo "checking bash syntax"
+    - bash -n scripts/*.sh || (echo "script syntax error" && exit 1)
+    - echo "scripts validation ok"
   only:
     - main
     - master
@@ -40,13 +41,13 @@ validate-kyverno-policies:
   stage: validate
   image: alpine:3.19
   script:
-    - echo "=== Step 3: validate kyverno policies ==="
-    - echo "Checking required policy files..."
-    - test -f policies/admission/deny-privileged.yaml || (echo "Missing deny-privileged.yaml" && exit 1)
-    - test -f policies/admission/deny-hostpath.yaml || (echo "Missing deny-hostpath.yaml" && exit 1)
-    - test -f policies/admission/require-readonly-rootfs.yaml || (echo "Missing require-readonly-rootfs.yaml" && exit 1)
-    - test -f policies/admission/deny-latest-tag.yaml || (echo "Missing deny-latest-tag.yaml" && exit 1)
-    - echo "Kyverno policies validation OK"
+    - echo "=== validate kyverno policies ==="
+    - echo "checking policy files"
+    - test -f policies/admission/deny-privileged.yaml || (echo "missing deny-privileged.yaml" && exit 1)
+    - test -f policies/admission/deny-hostpath.yaml || (echo "missing deny-hostpath.yaml" && exit 1)
+    - test -f policies/admission/require-readonly-rootfs.yaml || (echo "missing require-readonly-rootfs.yaml" && exit 1)
+    - test -f policies/admission/deny-latest-tag.yaml || (echo "missing deny-latest-tag.yaml" && exit 1)
+    - echo "kyverno policies validation ok"
   only:
     - main
     - master
@@ -59,10 +60,10 @@ trivy-scan-manifests:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - echo "=== Step 4: trivy scan manifests ==="
-    - echo "Running Trivy config scan..."
+    - echo "=== trivy scan manifests ==="
+    - echo "running trivy config scan"
     - trivy config lab/ --severity HIGH,CRITICAL --exit-code 0
-    - echo "Trivy manifest scan OK"
+    - echo "trivy manifest scan ok"
   only:
     - main
     - master
@@ -75,12 +76,12 @@ trivy-scan-images:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - echo "=== Step 5: trivy scan images ==="
-    - echo "Scanning python:3.11-slim..."
+    - echo "=== trivy scan images ==="
+    - echo "scanning python:3.11-slim"
     - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
-    - echo "Scanning rabbitmq:3.12-management..."
+    - echo "scanning rabbitmq:3.12-management"
     - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
-    - echo "Trivy image scan OK"
+    - echo "trivy image scan ok"
   only:
     - main
     - master
