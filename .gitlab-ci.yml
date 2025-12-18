@@ -76,18 +76,13 @@ trivy-scan-images:
   only:
     - main
 
-policy-tests:
+kuttl-tests:
   stage: test
-  image: alpine:3.19
-  before_script:
-    - apk add --no-cache bash curl kubectl
+  image: ghcr.io/kudobuilder/kuttl:0.15.0
   script:
-    - echo "=== policy tests ==="
-    - echo "applying test-policy-violations.yaml"
-    - kubectl apply -f tests/kyverno/test-policy-violations.yaml || echo "expected failures"
-    - echo "checking deny events"
-    - kubectl get events -n app | grep -i denied || echo "no deny events found"
-    - echo "policy tests ok"
+    - echo "=== kuttl tests ==="
+    - kuttl test ./tests/kuttl
+    - echo "kuttl tests ok"
   tags:
     - SAK5
   only:
