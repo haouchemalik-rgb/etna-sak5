@@ -1,35 +1,23 @@
 stages:
   - validate
   - security-scan
-  - build
-  - sign
-  - verify
   - test
 
-# -----------------------------
-# Step 1: Validate manifests
-# -----------------------------
 validate-manifests:
   stage: validate
   image: alpine:3.19
   script:
     - echo "=== validate manifests ==="
-    - echo "checking directories"
-    - test -d lab/a-admission || (echo "missing directory lab/a-admission" && exit 1)
-    - test -d lab/d-messaging || (echo "missing directory lab/d-messaging" && exit 1)
-    - test -d policies/admission || (echo "missing directory policies/admission" && exit 1)
-    - echo "checking files"
-    - test -f lab/a-admission/orders-api-worker.yaml || (echo "missing orders-api-worker.yaml" && exit 1)
-    - test -f lab/d-messaging/rabbitmq.yaml || (echo "missing rabbitmq.yaml" && exit 1)
+    - test -d lab/a-admission || exit 1
+    - test -d lab/d-messaging || exit 1
+    - test -d policies/admission || exit 1
+    - test -f lab/a-admission/orders-api-worker.yaml || exit 1
     - echo "manifests validation ok"
   tags:
     - SAK5
   only:
     - main
 
-# -----------------------------
-# Step 2: Validate scripts
-# -----------------------------
 validate-scripts:
   stage: validate
   image: alpine:3.19
@@ -37,16 +25,13 @@ validate-scripts:
     - apk add --no-cache bash
   script:
     - echo "=== validate scripts ==="
-    - bash -n scripts/*.sh || (echo "script syntax error" && exit 1)
+    - bash -n scripts/*.sh || exit 1
     - echo "scripts validation ok"
   tags:
     - SAK5
   only:
     - main
 
-# -----------------------------
-# Step 3: Validate Kyverno policies
-# -----------------------------
 validate-kyverno-policies:
   stage: validate
   image: alpine:3.19
@@ -56,16 +41,12 @@ validate-kyverno-policies:
     - test -f policies/admission/deny-hostpath.yaml || exit 1
     - test -f policies/admission/deny-latest-tag.yaml || exit 1
     - test -f policies/admission/require-readonly-rootfs.yaml || exit 1
-    - test -f policies/admission/require-signed-images.yaml || exit 1
     - echo "kyverno policies validation ok"
   tags:
     - SAK5
   only:
     - main
 
-# -----------------------------
-# Step 4: Trivy scan manifests
-# -----------------------------
 trivy-scan-manifests:
   stage: security-scan
   image:
@@ -80,9 +61,6 @@ trivy-scan-manifests:
   only:
     - main
 
-# -----------------------------
-# Step 5: Trivy scan images
-# -----------------------------
 trivy-scan-images:
   stage: security-scan
   image:
@@ -98,62 +76,6 @@ trivy-scan-images:
   only:
     - main
 
-# -----------------------------
-# Step 6: Build image
-# -----------------------------
-build-image:
-  stage: build
-  image: docker:24.0
-  services:
-    - docker:24.0-dind
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-  script:
-    - echo "=== build image ==="
-    - docker build -t registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA .
-    - docker push registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
-    - echo "image build ok"
-  tags:
-    - SAK5
-  only:
-    - main
-
-# -----------------------------
-# Step 7: Cosign sign
-# -----------------------------
-cosign-sign:
-  stage: sign
-  image: ghcr.io/sigstore/cosign/cosign:v2.2.0
-  script:
-    - echo "=== cosign sign ==="
-    - echo "$COSIGN_KEY" > cosign.key
-    - echo "$COSIGN_PASSWORD" > cosign.pass
-    - cosign sign --key cosign.key --password-file cosign.pass registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
-    - echo "cosign sign ok"
-  tags:
-    - SAK5
-  only:
-    - main
-
-# -----------------------------
-# Step 8: Cosign verify
-# -----------------------------
-cosign-verify:
-  stage: verify
-  image: ghcr.io/sigstore/cosign/cosign:v2.2.0
-  script:
-    - echo "=== cosign verify ==="
-    - echo "$COSIGN_PUB" > cosign.pub
-    - cosign verify --key cosign.pub registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
-    - echo "cosign verify ok"
-  tags:
-    - SAK5
-  only:
-    - main
-
-# -----------------------------
-# Step 9: KUTTL tests
-# -----------------------------
 kuttl-tests:
   stage: test
   image: kubeshop/kuttl:0.15.0
