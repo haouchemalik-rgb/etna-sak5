@@ -1,3 +1,66 @@
+stages:
+  - validate
+  - security-scan
+
+validate-manifests:
+  stage: validate
+  image: alpine:3.19
+  script:
+    - echo "validate manifests"
+    - test -d lab/a-admission || exit 1
+    - test -d lab/d-messaging || exit 1
+    - test -d policies/admission || exit 1
+    - test -f lab/d-messaging/rabbitmq.yaml || exit 1
+    - test -f lab/a-admission/orders-api-worker.yaml || exit 1
+  only:
+    - main
+    - master
+  tags:
+    - SAK5
+
+validate-scripts:
+  stage: validate
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - echo "validate scripts"
+    - bash -n scripts/*.sh
+  only:
+    - main
+    - master
+  tags:
+    - SAK5
+
+validate-kyverno-policies:
+  stage: validate
+  image: alpine:3.19
+  script:
+    - echo "validate kyverno policies"
+    - test -f policies/admission/deny-privileged.yaml || exit 1
+    - test -f policies/admission/deny-hostpath.yaml || exit 1
+    - test -f policies/admission/require-readonly-rootfs.yaml || exit 1
+    - test -f policies/admission/deny-latest-tag.yaml || exit 1
+  only:
+    - main
+    - master
+  tags:
+    - SAK5
+
+trivy-scan-manifests:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - echo "scan manifests"
+    - trivy config lab/ --severity HIGH,CRITICAL --exit-code 0
+  only:
+    - main
+    - master
+  tags:
+    - SAK5
+
 trivy-scan-images:
   stage: security-scan
   image:
@@ -7,7 +70,6 @@ trivy-scan-images:
     - echo "scan images"
     - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
     - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
-    - echo "scan termine"
   only:
     - main
     - master
