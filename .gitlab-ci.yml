@@ -1,7 +1,14 @@
 stages:
   - validate
   - security-scan
+  - build
+  - sign
+  - verify
+  - test
 
+# -----------------------------
+# Step 1: Validate manifests
+# -----------------------------
 validate-manifests:
   stage: validate
   image: alpine:3.19
@@ -12,15 +19,17 @@ validate-manifests:
     - test -d lab/d-messaging || (echo "missing directory lab/d-messaging" && exit 1)
     - test -d policies/admission || (echo "missing directory policies/admission" && exit 1)
     - echo "checking files"
-    - test -f lab/d-messaging/rabbitmq.yaml || (echo "missing rabbitmq.yaml" && exit 1)
     - test -f lab/a-admission/orders-api-worker.yaml || (echo "missing orders-api-worker.yaml" && exit 1)
+    - test -f lab/d-messaging/rabbitmq.yaml || (echo "missing rabbitmq.yaml" && exit 1)
     - echo "manifests validation ok"
-  only:
-    - main
-    - master
   tags:
     - SAK5
+  only:
+    - main
 
+# -----------------------------
+# Step 2: Validate scripts
+# -----------------------------
 validate-scripts:
   stage: validate
   image: alpine:3.19
@@ -28,32 +37,35 @@ validate-scripts:
     - apk add --no-cache bash
   script:
     - echo "=== validate scripts ==="
-    - echo "checking bash syntax"
     - bash -n scripts/*.sh || (echo "script syntax error" && exit 1)
     - echo "scripts validation ok"
-  only:
-    - main
-    - master
   tags:
     - SAK5
+  only:
+    - main
 
+# -----------------------------
+# Step 3: Validate Kyverno policies
+# -----------------------------
 validate-kyverno-policies:
   stage: validate
   image: alpine:3.19
   script:
     - echo "=== validate kyverno policies ==="
-    - echo "checking policy files"
-    - test -f policies/admission/deny-privileged.yaml || (echo "missing deny-privileged.yaml" && exit 1)
-    - test -f policies/admission/deny-hostpath.yaml || (echo "missing deny-hostpath.yaml" && exit 1)
-    - test -f policies/admission/require-readonly-rootfs.yaml || (echo "missing require-readonly-rootfs.yaml" && exit 1)
-    - test -f policies/admission/deny-latest-tag.yaml || (echo "missing deny-latest-tag.yaml" && exit 1)
+    - test -f policies/admission/deny-privileged.yaml || exit 1
+    - test -f policies/admission/deny-hostpath.yaml || exit 1
+    - test -f policies/admission/deny-latest-tag.yaml || exit 1
+    - test -f policies/admission/require-readonly-rootfs.yaml || exit 1
+    - test -f policies/admission/require-signed-images.yaml || exit 1
     - echo "kyverno policies validation ok"
-  only:
-    - main
-    - master
   tags:
     - SAK5
+  only:
+    - main
 
+# -----------------------------
+# Step 4: Trivy scan manifests
+# -----------------------------
 trivy-scan-manifests:
   stage: security-scan
   image:
@@ -61,15 +73,16 @@ trivy-scan-manifests:
     entrypoint: [""]
   script:
     - echo "=== trivy scan manifests ==="
-    - echo "running trivy config scan"
     - trivy config lab/ --severity HIGH,CRITICAL --exit-code 0
     - echo "trivy manifest scan ok"
-  only:
-    - main
-    - master
   tags:
     - SAK5
+  only:
+    - main
 
+# -----------------------------
+# Step 5: Trivy scan images
+# -----------------------------
 trivy-scan-images:
   stage: security-scan
   image:
@@ -77,13 +90,78 @@ trivy-scan-images:
     entrypoint: [""]
   script:
     - echo "=== trivy scan images ==="
-    - echo "scanning python:3.11-slim"
     - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
-    - echo "scanning rabbitmq:3.12-management"
     - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
     - echo "trivy image scan ok"
-  only:
-    - main
-    - master
   tags:
     - SAK5
+  only:
+    - main
+
+# -----------------------------
+# Step 6: Build image
+# -----------------------------
+build-image:
+  stage: build
+  image: docker:24.0
+  services:
+    - docker:24.0-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "=== build image ==="
+    - docker build -t registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA .
+    - docker push registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
+    - echo "image build ok"
+  tags:
+    - SAK5
+  only:
+    - main
+
+# -----------------------------
+# Step 7: Cosign sign
+# -----------------------------
+cosign-sign:
+  stage: sign
+  image: ghcr.io/sigstore/cosign/cosign:v2.2.0
+  script:
+    - echo "=== cosign sign ==="
+    - echo "$COSIGN_KEY" > cosign.key
+    - echo "$COSIGN_PASSWORD" > cosign.pass
+    - cosign sign --key cosign.key --password-file cosign.pass registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
+    - echo "cosign sign ok"
+  tags:
+    - SAK5
+  only:
+    - main
+
+# -----------------------------
+# Step 8: Cosign verify
+# -----------------------------
+cosign-verify:
+  stage: verify
+  image: ghcr.io/sigstore/cosign/cosign:v2.2.0
+  script:
+    - echo "=== cosign verify ==="
+    - echo "$COSIGN_PUB" > cosign.pub
+    - cosign verify --key cosign.pub registry.gitlab.com/$CI_PROJECT_PATH/app:$CI_COMMIT_SHA
+    - echo "cosign verify ok"
+  tags:
+    - SAK5
+  only:
+    - main
+
+# -----------------------------
+# Step 9: KUTTL tests
+# -----------------------------
+kuttl-tests:
+  stage: test
+  image: kubeshop/kuttl:0.15.0
+  script:
+    - echo "=== kuttl tests ==="
+    - kuttl test ./tests/kuttl
+    - echo "kuttl tests ok"
+  tags:
+    - SAK5
+  only:
+    - main
