@@ -4,11 +4,10 @@ trivy-scan-images:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - echo "Scan images"
+    - echo "scan images"
     - trivy image --severity HIGH,CRITICAL python:3.11-slim --exit-code 0
     - trivy image --severity HIGH,CRITICAL rabbitmq:3.12-management --exit-code 0
-    - echo "Scan termine"
-    - echo "Note: exit-code 0 pour ne pas bloquer"
+    - echo "scan termine"
   only:
     - main
     - master
