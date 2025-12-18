@@ -78,7 +78,11 @@ trivy-scan-images:
 
 kuttl-tests:
   stage: test
-  image: kyverno/kuttl:latest
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache curl bash
+    - curl -L https://github.com/kudobuilder/kuttl/releases/download/v0.15.0/kuttl_0.15.0_linux_x86_64 -o /usr/local/bin/kuttl
+    - chmod +x /usr/local/bin/kuttl
   script:
     - echo "=== kuttl tests ==="
     - kuttl test ./tests/kuttl
