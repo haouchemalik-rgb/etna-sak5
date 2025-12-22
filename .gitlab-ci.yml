@@ -4,24 +4,6 @@ stages:
   - test
 
 
-build-image:
-  stage: validate
-  image: docker:24.0
-  services:
-    - docker:24.0-dind
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-  script:
-    - echo "=== build & push image ==="
-    - docker login registry.gitlab.com -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
-    - docker build -t "$CI_REGISTRY_IMAGE/orders-api:1.0.0" .
-    - docker push "$CI_REGISTRY_IMAGE/orders-api:1.0.0"
-  tags:
-    - SAK5
-  only:
-    - main
-
-
 validate-manifests:
   stage: validate
   image: alpine:3.19
@@ -95,19 +77,6 @@ trivy-scan-images:
   only:
     - main
 
-sign-image:
-  stage: security-scan
-  image:
-    name: ghcr.io/sigstore/cosign/cosign:v2.2.3
-    entrypoint: [""]
-  script:
-    - echo "=== signing image ==="
-    - echo "$COSIGN_KEY" > cosign.key
-    - echo "$COSIGN_PASSWORD" | cosign sign --key cosign.key "$CI_REGISTRY_IMAGE/orders-api:1.0.0"
-  tags:
-    - SAK5
-  only:
-    - main
 
 
 verify-signature:
